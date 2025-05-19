@@ -8,7 +8,7 @@ This project implements a microservices-based Call Detail Records (CDR) platform
   Persists records to PostgreSQL and publishes events to Apache Kafka.
 
 - **Backend Microservice (ms-backend):**  
-  Provides REST APIs for managing CDRs.  
+  Provides REST APIs(Postman) for managing CDRs.  
   Stores data in MySQL.  
   Consumes Kafka events for data synchronization.  
   Secured using Keycloak (OpenID Connect/OAuth2).
