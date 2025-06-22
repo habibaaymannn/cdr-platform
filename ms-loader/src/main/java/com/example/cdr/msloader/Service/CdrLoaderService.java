@@ -116,11 +116,11 @@ public class CdrLoaderService {
 
                 try {
                     CdrLoader cdr = new CdrLoader();
-                    cdr.setSource(line[0]);
-                    cdr.setDestination(line[1]);
-                    cdr.setStartTime(LocalDateTime.parse(line[2], formatter));
-                    cdr.setService(ServiceTypeLoader.valueOf(line[3]));
-                    cdr.setUsageAmount(Double.parseDouble(line[4]));
+                    cdr.setSource(line[0].trim());
+                    cdr.setDestination(line[1].trim());
+                    cdr.setStartTime(LocalDateTime.parse(line[2].trim(), formatter));
+                    cdr.setService(ServiceTypeLoader.valueOf(line[3].trim()));
+                    cdr.setUsageAmount(Double.parseDouble(line[4].trim()));
 
                     if (isValidCdr(cdr)) {
                         saveCdr(cdr);
