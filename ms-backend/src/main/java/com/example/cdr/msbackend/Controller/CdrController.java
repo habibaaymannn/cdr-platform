@@ -6,6 +6,7 @@ import com.example.cdr.msbackend.Service.CdrService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 import jakarta.persistence.EntityNotFoundException;
@@ -17,13 +18,13 @@ import static com.example.cdr.msbackend.Model.ServiceType.*;
 @RestController
 @RequestMapping("/cdrs")
 public class CdrController {
-    @Autowired
     private CdrRepository repository;
     private final CdrService service;
 
     @Autowired
-    public CdrController(CdrService service) {
+    public CdrController(CdrRepository repository,CdrService service) {
         this.service = service;
+        this.repository = repository;
     }
 
     private static final Pattern PHONE_NUMBER_PATTERN = Pattern.compile("^\\d{10}$");
@@ -35,7 +36,6 @@ public class CdrController {
     @PreAuthorize("hasRole('cdr-write')")
     public Cdr create(@RequestBody Cdr cdr) {
         validateCdr(cdr);
-        service.createCDR(cdr);
         return service.createCDR(cdr);
     }
 
@@ -124,4 +124,11 @@ public class CdrController {
             throw new IllegalArgumentException("UsageAmount must be positive for VOICE/DATA");
         }
     }
+    @GetMapping("/cdrs/test")
+    public ResponseEntity<?> testAuthentication(Authentication authentication) {
+        System.out.println("Authenticated user: " + authentication.getName());
+        System.out.println("Authorities: " + authentication.getAuthorities());
+        return ResponseEntity.ok("Authenticated");
+    }
+
 }
