@@ -1,0 +1,67 @@
+{
+  "realm": "cdr-realm",
+  "enabled": true,
+  "users": [
+    {
+      "username": "testuser",
+      "enabled": true,
+      "emailVerified": true,
+      "credentials": [
+        {
+          "type": "password",
+          "value": "testpass",
+          "temporary": false
+        }
+      ]
+    },
+    {
+      "username": "service-account-spring-boot-backend",
+      "enabled": true,
+      "serviceAccountClientId": "spring-boot-backend",
+      "realmRoles": [
+        "cdr-read",
+        "cdr-write"
+      ]
+    }
+  ],
+  "roles": {
+    "realm": [
+      {
+        "name": "cdr-read",
+        "description": "Read access to CDR data"
+      },
+      {
+        "name": "cdr-write",
+        "description": "Write access to CDR data"
+      }
+    ]
+  },
+  "clients": [
+    {
+      "clientId": "spring-boot-backend",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": false,
+      "secret": "eDseMeP4WpqHsV2Cc6R8Ak1lVeK28BwP",
+      "redirectUris": ["*"],
+      "webOrigins": ["*"],
+      "standardFlowEnabled": false,
+      "serviceAccountsEnabled": true,
+      "authorizationServicesEnabled": true,
+      "clientAuthenticatorType": "client-secret"
+    },
+    {
+      "clientId": "ms-frontend",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": true,
+      "redirectUris": [
+        "http://localhost:8083/*"
+      ],
+      "webOrigins": [
+        "http://localhost:8083"
+      ],
+      "standardFlowEnabled": true
+    }
+  ]
+}

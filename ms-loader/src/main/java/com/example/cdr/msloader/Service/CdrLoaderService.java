@@ -1,5 +1,6 @@
 package com.example.cdr.msloader.Service;
 
+import com.example.cdr.msloader.Model.CdrDTO;
 import com.example.cdr.msloader.Model.CdrLoader;
 import com.example.cdr.msloader.Model.CdrWrapper;
 import com.example.cdr.msloader.Model.ServiceTypeLoader;
@@ -311,16 +312,13 @@ public class CdrLoaderService {
             cdrLoaderRepository.flush();
             logger.info("Saved CDR with ID: {}", savedCdr.getId());
 
-            String cdrJson = objectMapper.writeValueAsString(cdr);
+            // Convert to DTO and serialize
+            CdrDTO dto = toCdrDTO(savedCdr);
+            String cdrJson = objectMapper.writeValueAsString(dto);
             logger.debug("Serialized CDR to JSON: {}", cdrJson);
+
             kafkaProducer.sendCdr("cdr-records", cdrJson);
             logger.info("Sent CDR {} to Kafka topic cdr-records", savedCdr.getId());
-        } catch (DataIntegrityViolationException e) {
-            logger.error("Failed to save CDR due to constraint violation: {}", e.getMessage(), e);
-            throw e;
-        } catch (JsonProcessingException e) {
-            logger.error("Failed to serialize CDR to JSON: {}", e.getMessage(), e);
-            throw new RuntimeException("Serialization error", e);
         } catch (Exception e) {
             logger.error("Failed to save or send CDR to Kafka: {}", e.getMessage(), e);
             throw new RuntimeException("Kafka or database error", e);
@@ -352,4 +350,15 @@ public class CdrLoaderService {
             logger.error("Error moving file {} to error directory: {}", filePath, e.getMessage(), e);
         }
     }
+    private CdrDTO toCdrDTO(CdrLoader cdr) {
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm:ss");
+        CdrDTO dto = new CdrDTO();
+        dto.setSource(cdr.getSource());
+        dto.setDestination(cdr.getDestination());
+        dto.setStartTime(cdr.getStartTime().format(formatter)); // Convert LocalDateTime to string
+        dto.setService(cdr.getService().name()); // Enum to string
+        dto.setUsageAmount(cdr.getUsageAmount());
+        return dto;
+    }
+
 }

@@ -1,6 +1,8 @@
 package com.example.cdr.msbackend.Controller;
 
 import com.example.cdr.msbackend.Model.Cdr;
+import com.example.cdr.msbackend.Model.CdrDTO;
+import com.example.cdr.msbackend.Model.ServiceType;
 import com.example.cdr.msbackend.Repository.CdrRepository;
 import com.example.cdr.msbackend.Service.CdrService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -10,7 +12,11 @@ import org.springframework.security.core.Authentication;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 import jakarta.persistence.EntityNotFoundException;
+
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Map;
 import java.util.regex.Pattern;
 
 import static com.example.cdr.msbackend.Model.ServiceType.*;
@@ -30,25 +36,36 @@ public class CdrController {
     private static final Pattern PHONE_NUMBER_PATTERN = Pattern.compile("^\\d{10}$");
     private static final Pattern URL_PATTERN = Pattern.compile("^(https?://).+");
 
-    // Create a CDR
     @PostMapping
     @Transactional
-    @PreAuthorize("hasRole('cdr-write')")
-    public Cdr create(@RequestBody Cdr cdr) {
+    @PreAuthorize("hasAuthority('cdr-write')")
+    public Cdr create(@RequestBody CdrDTO dto) {
+        Cdr cdr = new Cdr();
+
+        // Convert DTO fields
+        cdr.setSource(dto.getSource());
+        cdr.setDestination(dto.getDestination());
+
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm:ss");
+        cdr.setStartTime(LocalDateTime.parse(dto.getStartTime(), formatter));
+
+        cdr.setService(ServiceType.valueOf(dto.getService()));  // VOICE, SMS, DATA
+        cdr.setUsageAmount(dto.getUsageAmount());
+
         validateCdr(cdr);
         return service.createCDR(cdr);
     }
 
     // Read all CDRs
     @GetMapping
-    @PreAuthorize("hasRole('cdr-read')")
+    @PreAuthorize("hasAuthority('cdr-read')")
     public List<Cdr> getAll() {
         return service.getAllCDRs();
     }
 
     // Read a single CDR by ID
     @GetMapping("/{id}")
-    @PreAuthorize("hasRole('cdr-read')")
+    @PreAuthorize("hasAuthority('cdr-read')")
     public ResponseEntity<Cdr> getById(@PathVariable Long id) {
         return service.getCDRById(id)
                 .map(ResponseEntity::ok)
@@ -58,7 +75,7 @@ public class CdrController {
     // Update a CDR
     @PutMapping("/{id}")
     @Transactional
-    @PreAuthorize("hasRole('cdr-write')")
+    @PreAuthorize("hasAuthority('cdr-write')")
     public ResponseEntity<Cdr> update(@PathVariable Long id, @RequestBody Cdr updatedCdr) {
         return service.getCDRById(id)
                 .map(existingCdr -> {
@@ -77,7 +94,7 @@ public class CdrController {
     // Delete a CDR
     @DeleteMapping("/{id}")
     @Transactional
-    @PreAuthorize("hasRole('cdr-write')")
+    @PreAuthorize("hasAuthority('cdr-write')")
     public ResponseEntity<Void> delete(@PathVariable Long id) {
         if (!repository.existsById(id)) {
             throw new EntityNotFoundException("CDR not found with id: " + id);
@@ -124,11 +141,25 @@ public class CdrController {
             throw new IllegalArgumentException("UsageAmount must be positive for VOICE/DATA");
         }
     }
-    @GetMapping("/cdrs/test")
+    @GetMapping("/test")
     public ResponseEntity<?> testAuthentication(Authentication authentication) {
         System.out.println("Authenticated user: " + authentication.getName());
         System.out.println("Authorities: " + authentication.getAuthorities());
         return ResponseEntity.ok("Authenticated");
     }
+    @GetMapping("/debug")
+    public ResponseEntity<?> debug(Authentication authentication) {
+        org.springframework.security.oauth2.jwt.Jwt jwt = (org.springframework.security.oauth2.jwt.Jwt) authentication.getPrincipal();
+        List<String> authorities = authentication.getAuthorities()
+                .stream().map(Object::toString).toList();
+        return ResponseEntity.ok(
+                Map.of(
+                        "user", authentication.getName(),
+                        "authorities", authorities,
+                        "claims", jwt.getClaims()
+                )
+        );
+    }
+
 
 }
