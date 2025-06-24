@@ -56,12 +56,12 @@ services:
     image: mysql:8
     container_name: mysql
     environment:
-      - MYSQL_ROOT_PASSWORD=habiba@2005
+      - MYSQL_ROOT_PASSWORD=<your-pass>
       - MYSQL_DATABASE=cdr_db
     ports:
       - "3306:3306"
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-phabiba@2005"]
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-p<your-pass>"]
       interval: 5s
       timeout: 5s
       retries: 10
@@ -81,7 +81,7 @@ services:
     image: postgres:15
     environment:
       - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=habiba@2005
+      - POSTGRES_PASSWORD=your-pass>
       - POSTGRES_DB=cdr2_db
     ports:
       - "5432:5432"
@@ -108,7 +108,7 @@ services:
       - "8080:8080"
     environment:
       - KEYCLOAK_ADMIN=admin
-      - KEYCLOAK_ADMIN_PASSWORD=admin
+      - KEYCLOAK_ADMIN_PASSWORD=<youur-pass>
       - KC_HTTP_PORT=8080
       - KC_HOSTNAME_PORT=8080
       - KC_HTTP_ENABLED=true
