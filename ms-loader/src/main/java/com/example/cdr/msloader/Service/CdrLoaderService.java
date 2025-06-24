@@ -234,7 +234,7 @@ public class CdrLoaderService {
             } catch (Exception e1) {
                 logger.info("Failed to parse YAML as single CDR: {}", e1.getMessage());
                 try {
-                    // Try parsing as CdrWrapper (Cdr: ...)
+
                     CdrWrapper wrapper = mapper.readValue(yamlContent, CdrWrapper.class);
                     cdrs = wrapper.getCdrs();
                     logger.info("Deserialized {} CDRs from YAML file {} (wrapper)", cdrs.size(), filePath);
@@ -312,7 +312,7 @@ public class CdrLoaderService {
             cdrLoaderRepository.flush();
             logger.info("Saved CDR with ID: {}", savedCdr.getId());
 
-            // Convert to DTO and serialize
+            // Convert to DTO
             CdrDTO dto = toCdrDTO(savedCdr);
             String cdrJson = objectMapper.writeValueAsString(dto);
             logger.debug("Serialized CDR to JSON: {}", cdrJson);

@@ -3,11 +3,11 @@ package com.example.cdr.msbackend.Model;
 public class CdrDTO {
     private String source;
     private String destination;
-    private String startTime; // formatted string
-    private String service;   // enum as string
+    private String startTime;
+    private String service;
     private Double usageAmount;
 
-    // Getters and Setters
+
     public String getSource() { return source; }
     public void setSource(String source) { this.source = source; }
 

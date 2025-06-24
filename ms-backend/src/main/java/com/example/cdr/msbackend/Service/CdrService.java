@@ -26,17 +26,6 @@ public class CdrService {
         return cdrRepository.save(cdr);
     }
 
-//    public Cdr updateCDR(Long id, Cdr updatedCDR) {
-//        return cdrRepository.findById(id)
-//                .map(existingCDR -> {
-//                    existingCDR.setSource(updatedCDR.getSource());
-//                    existingCDR.setDestination(updatedCDR.getDestination());
-//                    existingCDR.setStartTime(updatedCDR.getStartTime());
-//                    return cdrRepository.save(existingCDR);
-//                })
-//                .orElseThrow(() -> new RuntimeException("CDR not found"));
-//    }
-
     public void deleteCDR(Long id) {
         cdrRepository.deleteById(id);
     }

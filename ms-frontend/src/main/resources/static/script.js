@@ -100,7 +100,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     function formatDate(dateString) {
         const parsed = dayjs(dateString, "DD-MM-YYYY HH:mm:ss");
         if (!parsed.isValid()) return "Invalid Date";
-        return parsed.format("YYYY-MM-DD HH:mm:ss"); // or use .toLocaleString() if you want
+        return parsed.format("YYYY-MM-DD HH:mm:ss");
     }
 
 
@@ -187,8 +187,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     function filterCdrsByDate(data, fromDate) {
         if (!fromDate) return data;
 
+        //just for debugging
         const start = dayjs(fromDate, "YYYY-MM-DD").startOf('day');
-        const end = dayjs(fromDate, "YYYY-MM-DD").endOf('day'); // same day
+        const end = dayjs(fromDate, "YYYY-MM-DD").endOf('day');
 
         console.log('Parsed fromDate:', start.format());
         console.log('End of that day:', end.format());
@@ -311,6 +312,4 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
         });
     }
-
-
 });
