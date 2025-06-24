@@ -1,0 +1,9 @@
+<CdrRecords>
+    <Cdr>
+        <source>0111234567</source>
+        <destination>0127654321</destination>
+        <startTime>24-06-2025 13:00:00</startTime>
+        <service>DATA</service>
+        <usageAmount>450.5</usageAmount>
+    </Cdr>
+</CdrRecords>
