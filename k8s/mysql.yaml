@@ -30,7 +30,7 @@ spec:
           image: mysql:8
           env:
             - name: MYSQL_ROOT_PASSWORD
-              value: habiba@2005
+              value: <your-pass>
             - name: MYSQL_DATABASE
               value: cdr_db
           ports:
