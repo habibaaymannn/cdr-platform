@@ -17,8 +17,6 @@ public class KafkaConsumer {
     public KafkaConsumer(CdrRepository cdrRepository, ObjectMapper objectMapper) {
         this.cdrRepository = cdrRepository;
         this.objectMapper = objectMapper;
-        logger.info("✅Using ObjectMapper: {}", objectMapper.getClass());
-
     }
 
     @KafkaListener(topics = "cdr-records", groupId = "cdr-consumer-group")

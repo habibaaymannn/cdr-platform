@@ -49,21 +49,21 @@ public class CdrController {
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm:ss");
         cdr.setStartTime(LocalDateTime.parse(dto.getStartTime(), formatter));
 
-        cdr.setService(ServiceType.valueOf(dto.getService()));  // VOICE, SMS, DATA
+        cdr.setService(ServiceType.valueOf(dto.getService()));
         cdr.setUsageAmount(dto.getUsageAmount());
 
         validateCdr(cdr);
         return service.createCDR(cdr);
     }
 
-    // Read all CDRs
+    // get all CDRs
     @GetMapping
     @PreAuthorize("hasAuthority('cdr-read')")
     public List<Cdr> getAll() {
         return service.getAllCDRs();
     }
 
-    // Read a single CDR by ID
+    // Read CDR by ID
     @GetMapping("/{id}")
     @PreAuthorize("hasAuthority('cdr-read')")
     public ResponseEntity<Cdr> getById(@PathVariable Long id) {
@@ -105,12 +105,12 @@ public class CdrController {
     }
 
     private void validateCdr(Cdr cdr) {
-        // Validate source
+
         if (cdr.getSource() == null || !PHONE_NUMBER_PATTERN.matcher(cdr.getSource()).matches()) {
             throw new IllegalArgumentException("Source must be a valid 10-digit phone number");
         }
 
-        // Validate destination
+
         if (cdr.getDestination() == null) {
             throw new IllegalArgumentException("Destination is required");
         }
@@ -141,25 +141,4 @@ public class CdrController {
             throw new IllegalArgumentException("UsageAmount must be positive for VOICE/DATA");
         }
     }
-    @GetMapping("/test")
-    public ResponseEntity<?> testAuthentication(Authentication authentication) {
-        System.out.println("Authenticated user: " + authentication.getName());
-        System.out.println("Authorities: " + authentication.getAuthorities());
-        return ResponseEntity.ok("Authenticated");
-    }
-    @GetMapping("/debug")
-    public ResponseEntity<?> debug(Authentication authentication) {
-        org.springframework.security.oauth2.jwt.Jwt jwt = (org.springframework.security.oauth2.jwt.Jwt) authentication.getPrincipal();
-        List<String> authorities = authentication.getAuthorities()
-                .stream().map(Object::toString).toList();
-        return ResponseEntity.ok(
-                Map.of(
-                        "user", authentication.getName(),
-                        "authorities", authorities,
-                        "claims", jwt.getClaims()
-                )
-        );
-    }
-
-
 }
