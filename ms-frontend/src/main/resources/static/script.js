@@ -1,16 +1,15 @@
 document.addEventListener('DOMContentLoaded', async () => {
-    // Keycloak initialization
     const keycloak = new Keycloak({
-        url: 'http://localhost:8081',
+        url: 'http://keycloak:8080',
         realm: 'cdr-realm',
         clientId: 'ms-frontend'
     });
-    const frontendBase = window.location.origin; // e.g. http://localhost:8083
 
     let token = '';
-    let cdrs = [];
+    let username = '';
+    const cdrDataDiv = document.getElementById('cdr-data');
+    const usageReportDiv = document.getElementById('usage-report');
 
-    // DOM Elements
     const loginBtn = document.getElementById('loginBtn');
     const logoutBtn = document.getElementById('logoutBtn');
     const fetchCdrBtn = document.getElementById('fetchCdrBtn');
@@ -18,84 +17,90 @@ document.addEventListener('DOMContentLoaded', async () => {
     const searchForm = document.getElementById('searchForm');
     const sortForm = document.getElementById('sortForm');
     const clearSearchBtn = document.getElementById('clearSearch');
-    const cdrDataDiv = document.getElementById('cdr-data');
-    const usageReportDiv = document.getElementById('usage-report');
 
+    let cdrs = [];
 
-    console.log('DOM Elements:', { loginBtn, logoutBtn, fetchCdrBtn, reportForm, searchForm, sortForm, clearSearchBtn, cdrDataDiv, usageReportDiv });
-    console.log('Current URL:', window.location.href);
-    console.log('URL Fragment:', window.location.hash);
-    console.log('URL Search:', window.location.search);
-    if (!loginBtn) console.error('Login button not found! Check id="loginBtn" in index.html');
-
-
-    async function testKeycloakEndpoint() {
-        try {
-            const response = await fetch('http://localhost:8081/realms/cdr-realm/.well-known/openid-configuration', {
-                method: 'GET',
-                headers: { 'Accept': 'application/json' }
-            });
-            console.log('Keycloak endpoint response:', response.status);
-            if (!response.ok) throw new Error(`HTTP error ${response.status}`);
-            const config = await response.json();
-            console.log('Keycloak configuration:', config);
-            return true;
-        } catch (err) {
-            console.error('Keycloak endpoint test failed:', err);
-            return false;
+    keycloak.init({ onLoad: 'login-required' }).then(authenticated => {
+        if (authenticated) {
+            token = keycloak.token;
+            username = keycloak.tokenParsed.preferred_username;
+            alert(`Logged in as ${username}`);
+        } else {
+            cdrDataDiv.innerHTML = 'Not authenticated.';
         }
-    }
 
-    //Keycloak initialization
-    const keycloakAvailable = await testKeycloakEndpoint();
-    if (!keycloakAvailable) {
-        cdrDataDiv.innerHTML = 'Error: Keycloak server unavailable. Check http://localhost:8081.';
-        loginBtn.disabled = true;
-        return;
-    }
+        // Automatically refresh token every 60 seconds
+        setInterval(() => {
+            keycloak.updateToken(60).then(refreshed => {
+                if (refreshed) {
+                    token = keycloak.token;
+                    console.log('Token refreshed');
+                }
+            }).catch(() => {
+                console.error('Failed to refresh token');
+            });
+        }, 60000);
+    }).catch(() => {
+        cdrDataDiv.innerHTML = 'Failed to initialize Keycloak.';
+    });
 
-    try {
-        const authenticated = await keycloak.init({
-            onLoad: 'login-required',
-            checkLoginIframe: false,
-            redirectUri: frontendBase + '/index.html',
-            responseMode: 'fragment',
-            flow: 'standard'
+    //login button
+    if (loginBtn) {
+        loginBtn.addEventListener('click', () => {
+            keycloak.login();
         });
-        console.log('Authenticated:', authenticated);
-        console.log('Token:', keycloak.token);
-        console.log('Session ID:', keycloak.sessionId);
-        console.log('Token Parsed:', keycloak.tokenParsed);
-        console.log('Keycloak Auth Server URL:', keycloak.authServerUrl);
-        console.log('Keycloak Redirect URI:', keycloak.redirectUri);
-    } catch (err) {
-        console.error('Keycloak initialization failed:', err);
-        cdrDataDiv.innerHTML = `Failed to initialize authentication: ${err.message || 'Unknown error'}.`;
     }
 
-
-    keycloak.onTokenExpired = () => console.log('Token expired');
-    keycloak.onAuthSuccess = () => console.log('Auth success:', keycloak.token);
-    keycloak.onAuthError = (errorData) => console.error('Auth error:', errorData);
-
+    //logout button
+    if (logoutBtn) {
+        logoutBtn.addEventListener('click', () => {
+            keycloak.logout();
+            cdrDataDiv.innerHTML = 'Logged out.';
+        });
+    }
 
     async function getValidToken() {
         try {
-            if (!keycloak.authenticated) {
-                console.warn('Not authenticated, please log in');
-                cdrDataDiv.innerHTML = 'Not authenticated, please click "Login".';
-                return null;
+            const refreshed = await keycloak.updateToken(60);
+            if (refreshed) {
+                token = keycloak.token;
+                console.log('Token refreshed');
             }
-            console.log('Checking token validity...');
-            await keycloak.updateToken(30);
-            token = keycloak.token;
-            console.log('Token refreshed:', token.substring(0, 20) + '...');
             return token;
-        } catch (err) {
-            console.error('Token refresh failed:', err);
-            cdrDataDiv.innerHTML = `Authentication error: ${err.message || 'Please log in again'}`;
+        } catch {
+            cdrDataDiv.innerHTML = 'Session expired. Please login again.';
             return null;
         }
+    }
+    //fetch button
+    if (fetchCdrBtn) {
+        fetchCdrBtn.addEventListener('click', async () => {
+            cdrDataDiv.innerHTML = 'Loading...';
+            try {
+                const validToken = await getValidToken();
+                if (!validToken) return;
+                const response = await fetch('http://localhost:8084/cdrs', {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${validToken}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                cdrs = await response.json();
+                renderCdrTable(cdrs);
+            } catch (err) {
+                cdrDataDiv.innerHTML = `Error: ${err.message}`;
+            }
+        });
+    }
+    dayjs.extend(dayjs_plugin_customParseFormat);
+    dayjs.extend(dayjs_plugin_isBetween);
+
+    function formatDate(dateString) {
+        const parsed = dayjs(dateString, "DD-MM-YYYY HH:mm:ss");
+        if (!parsed.isValid()) return "Invalid Date";
+        return parsed.format("YYYY-MM-DD HH:mm:ss"); // or use .toLocaleString() if you want
     }
 
 
@@ -105,58 +110,68 @@ document.addEventListener('DOMContentLoaded', async () => {
             return;
         }
 
-        const formattedData = data.map(cdr => ({
-            id: cdr.id,
-            source: cdr.source,
-            destination: cdr.destination,
-            startTime: cdr.startTime,
-            service: cdr.service,
-            usageAmount: cdr.usageAmount
-        }));
         cdrDataDiv.innerHTML = `
-            <table border="1">
-                <tr>
-                    <th>ID</th>
-                    <th>Source</th>
-                    <th>Destination</th>
-                    <th>Start Time</th>
-                    <th>Service</th>
-                    <th>Usage</th>
-                </tr>
-                ${formattedData.map(cdr => `
-                    <tr>
-                        <td>${cdr.id}</td>
-                        <td>${cdr.source}</td>
-                        <td>${cdr.destination}</td>
-                        <td>${new Date(cdr.startTime).toLocaleString()}</td>
-                        <td>${cdr.service}</td>
-                        <td>${cdr.usageAmount}</td>
-                    </tr>
-                `).join('')}
-            </table>
-        `;
+      <table border="1">
+        <tr>
+          <th>ID</th>
+          <th>Source</th>
+          <th>Destination</th>
+          <th>Start Time</th>
+          <th>Service</th>
+          <th>Usage Amout</th>
+        </tr>
+        ${data.map(cdr => `
+          <tr>
+            <td>${cdr.id}</td>
+            <td>${cdr.source}</td>
+            <td>${cdr.destination}</td>
+            <td>${formatDate(cdr.startTime)}</td>
+            <td>${cdr.service}</td>
+            <td>${cdr.usageAmount}</td>
+          </tr>
+        `).join('')}
+      </table>
+    `;
     }
-
-
-    function searchCdrs(data, query) {
+    function searchCdrs(data, query, field) {
         if (!query) return data;
         const lowerQuery = query.toLowerCase();
-        return data.filter(cdr =>
-            cdr.id.toString().includes(lowerQuery) ||
-            cdr.source.toLowerCase().includes(lowerQuery) ||
-            cdr.destination.toLowerCase().includes(lowerQuery) ||
-            new Date(cdr.startTime).toLocaleString().toLowerCase().includes(lowerQuery) ||
-            cdr.service.toLowerCase().includes(lowerQuery) ||
-            cdr.usageAmount.toString().includes(lowerQuery)
-        );
-    }
 
+        return data.filter(cdr => {
+            const parsedDate = dayjs(cdr.startTime, "DD-MM-YYYY HH:mm:ss");
+            const dateString = parsedDate.isValid() ? parsedDate.format("YYYY-MM-DD HH:mm:ss") : "";
+
+            switch (field) {
+                case 'id':
+                    return cdr.id.toString() === lowerQuery;
+                case 'source':
+                    return cdr.source.toLowerCase().includes(lowerQuery);
+                case 'destination':
+                    return cdr.destination.toLowerCase().includes(lowerQuery);
+                case 'startTime':
+                    return dateString.toLowerCase().includes(lowerQuery);
+                case 'service':
+                    return cdr.service.toLowerCase().includes(lowerQuery);
+                case 'usageAmount':
+                    return parseFloat(cdr.usageAmount) === parseFloat(query);
+                case 'all':
+                default:
+                    return (
+                        cdr.id.toString().includes(lowerQuery) ||
+                        cdr.source.toLowerCase().includes(lowerQuery) ||
+                        cdr.destination.toLowerCase().includes(lowerQuery) ||
+                        dateString.toLowerCase().includes(lowerQuery) ||
+                        cdr.service.toLowerCase().includes(lowerQuery) ||
+                        cdr.usageAmount.toString().includes(lowerQuery)
+                    );
+            }
+        });
+    }
 
     function sortCdrs(data, field, direction) {
         const sorted = [...data];
         sorted.sort((a, b) => {
-            let valA = a[field];
-            let valB = b[field];
+            let valA = a[field], valB = b[field];
             if (field === 'startTime') {
                 valA = new Date(valA).getTime();
                 valB = new Date(valB).getTime();
@@ -164,49 +179,56 @@ document.addEventListener('DOMContentLoaded', async () => {
                 valA = parseFloat(valA);
                 valB = parseFloat(valB);
             }
-            if (valA < valB) return direction === 'asc' ? -1 : 1;
-            if (valA > valB) return direction === 'asc' ? 1 : -1;
-            return 0;
+            return direction === 'asc' ? valA - valB : valB - valA;
         });
         return sorted;
     }
 
-
     function filterCdrsByDate(data, fromDate) {
-        let filtered = data;
-        if (fromDate) {
-            const start = new Date(fromDate).setHours(0, 0, 0, 0);
-            filtered = filtered.filter(cdr => new Date(cdr.startTime).getTime() >= start);
-        }
-        // No toDate -> include all records up to today
-        const today = new Date().setHours(23, 59, 59, 999);
-        filtered = filtered.filter(cdr => new Date(cdr.startTime).getTime() <= today);
-        return filtered;
+        if (!fromDate) return data;
+
+        const start = dayjs(fromDate, "YYYY-MM-DD").startOf('day');
+        const end = dayjs(fromDate, "YYYY-MM-DD").endOf('day'); // same day
+
+        console.log('Parsed fromDate:', start.format());
+        console.log('End of that day:', end.format());
+
+        return data.filter(cdr => {
+            const cdrDate = dayjs(cdr.startTime, "DD-MM-YYYY HH:mm:ss");
+            const isValid = cdrDate.isValid();
+            const inRange = isValid && cdrDate.isBetween(start, end, null, '[]');
+            console.log('CDR:', cdr.startTime, 'Parsed:', cdrDate.format(), 'Valid:', isValid, 'In Range:', inRange);
+            return inRange;
+        });
     }
 
 
+
     function generateReport(type, data) {
-        if (data.length === 0) {
-            return '<p>No data available for the selected date range.</p>';
-        }
+        if (data.length === 0) return '<p>No data available.</p>';
+
         if (type === 'dailyCount') {
             const dailyCounts = data.reduce((acc, cdr) => {
-                const date = new Date(cdr.startTime).toISOString().split('T')[0];
-                acc[date] = (acc[date] || 0) + 1;
+                const parsed = dayjs(cdr.startTime, "DD-MM-YYYY HH:mm:ss");
+                const date = parsed.isValid() ? parsed.format("YYYY-MM-DD") : "Invalid";
+                if (date !== "Invalid") {
+                    acc[date] = (acc[date] || 0) + 1;
+                }
                 return acc;
             }, {});
             return `
-                <h3>Daily Usage Count</h3>
-                <table border="1">
-                    <tr><th>Date</th><th>CDR Count</th></tr>
-                    ${Object.entries(dailyCounts).map(([date, count]) => `
-                        <tr><td>${date}</td><td>${count}</td></tr>
-                    `).join('')}
-                </table>
-            `;
-        } else if (type === 'dailyService') {
-            const dailyServiceUsage = data.reduce((acc, cdr) => {
-                const date = new Date(cdr.startTime).toISOString().split('T')[0];
+        <h3>Daily Usage Count</h3>
+        <table border="1">
+            <tr><th>Date</th><th>CDR Count</th></tr>
+            ${Object.entries(dailyCounts).map(([date, count]) =>
+                `<tr><td>${date}</td><td>${count}</td></tr>`).join('')}
+        </table>
+    `;
+        }
+        else if (type === 'dailyService') {
+            const dailyService = data.reduce((acc, cdr) => {
+                const parsed = dayjs(cdr.startTime, "DD-MM-YYYY HH:mm:ss");
+                const date = parsed.isValid() ? parsed.format("YYYY-MM-DD") : "Invalid";
                 acc[date] = acc[date] || { VOICE: 0, SMS: 0, DATA: 0 };
                 acc[date][cdr.service] += cdr.usageAmount;
                 return acc;
@@ -214,171 +236,81 @@ document.addEventListener('DOMContentLoaded', async () => {
             return `
                 <h3>Daily Usage per Service</h3>
                 <table border="1">
-                    <tr><th>Date</th><th>VOICE (minutes)</th><th>SMS (messages)</th><th>DATA (MB)</th></tr>
-                    ${Object.entries(dailyServiceUsage).map(([date, usage]) => `
-                        <tr>
-                            <td>${date}</td>
-                            <td>${usage.VOICE.toFixed(2)}</td>
-                            <td>${usage.SMS.toFixed(2)}</td>
-                            <td>${usage.DATA.toFixed(2)}</td>
-                        </tr>
-                    `).join('')}
-                </table>
-            `;
-        } else if (type === 'topSources') {
-            const sourceCounts = data.reduce((acc, cdr) => {
-                acc[cdr.source] = (acc[cdr.source] || 0) + 1;
-                return acc;
-            }, {});
-            const topSources = Object.entries(sourceCounts)
-                .sort((a, b) => b[1] - a[1])
-                .slice(0, 5);
-            return `
-                <h3>Top 5 Sources by CDR Count</h3>
-                <table border="1">
-                    <tr><th>Source</th><th>CDR Count</th></tr>
-                    ${topSources.map(([source, count]) => `
-                        <tr><td>${source}</td><td>${count}</td></tr>
-                    `).join('')}
+                    <tr><th>Date</th><th>VOICE</th><th>SMS</th><th>DATA</th></tr>
+                    ${Object.entries(dailyService).map(([date, usage]) =>
+                `<tr><td>${date}</td><td>${usage.VOICE}</td><td>${usage.SMS}</td><td>${usage.DATA}</td></tr>`).join('')}
                 </table>
             `;
         }
         return '<p>Invalid report type.</p>';
     }
 
-    // Event Listeners
-    if (loginBtn) {
-        loginBtn.addEventListener('click', () => {
-            console.log('Login button clicked');
-            try {
-                keycloak.login({ redirectUri: window.location.origin + '/Call_Detail_Records/static/index.html' });
-                console.log('Initiating Keycloak login...');
-            } catch (err) {
-                console.error('Login failed:', err);
-                cdrDataDiv.innerHTML = `Login error: ${err.message || 'Unable to initiate login'}`;
-            }
-        });
-    } else {
-        console.error('Cannot attach loginBtn listener: element not found');
-    }
-
-    if (logoutBtn) {
-        logoutBtn.addEventListener('click', () => {
-            console.log('Logout button clicked');
-            keycloak.logout({ redirectUri: window.location.origin + '/index.html' });
-        });
-    } else {
-        console.error('logoutBtn not found');
-    }
-
-    if (fetchCdrBtn) {
-        fetchCdrBtn.addEventListener('click', async () => {
-            console.log('Fetch CDR button clicked');
-            cdrDataDiv.innerHTML = 'Loading...';
-            try {
-                const validToken = await getValidToken();
-                if (!validToken) return;
-                console.log('Fetching CDRs with token:', validToken.substring(0, 20) + '...');
-                const response = await fetch('http://localhost:8080/cdrs', {
-                    method: 'GET',
-                    headers: {
-                        'Authorization': `Bearer ${validToken}`,
-                        'Content-Type': 'application/json'
-                    }
-                });
-                console.log('Response status:', response.status);
-                if (!response.ok) {
-                    const errorText = await response.text();
-                    throw new Error(`HTTP error ${response.status}: ${errorText || response.statusText}`);
-                }
-                cdrs = await response.json();
-                console.log('CDR Records:', cdrs);
-                renderCdrTable(cdrs);
-            } catch (err) {
-                console.error('Error fetching CDRs:', err);
-                cdrDataDiv.innerHTML = `Error: ${err.message}`;
-            }
-        });
-    } else {
-        console.error('fetchCdrBtn not found');
-    }
-
     if (searchForm) {
         searchForm.addEventListener('submit', (e) => {
             e.preventDefault();
-            console.log('Search form submitted');
-            const searchQuery = document.getElementById('searchQuery').value;
-            console.log(`Searching for: ${searchQuery}`);
-            const filteredCdrs = searchCdrs(cdrs, searchQuery);
-            renderCdrTable(filteredCdrs);
+            const query = document.getElementById('searchQuery').value;
+            const field = document.getElementById('searchField').value;
+            const filtered = searchCdrs(cdrs, query, field);
+            renderCdrTable(filtered);
         });
-    } else {
-        console.error('searchForm not found');
     }
 
     if (clearSearchBtn) {
         clearSearchBtn.addEventListener('click', () => {
-            console.log('Clear search clicked');
             document.getElementById('searchQuery').value = '';
             renderCdrTable(cdrs);
         });
-    } else {
-        console.error('clearSearchBtn not found');
     }
 
     if (sortForm) {
         sortForm.addEventListener('submit', (e) => {
             e.preventDefault();
-            console.log('Sort form submitted');
-            const sortField = document.getElementById('sortField').value;
-            const sortDirection = document.getElementById('sortDirection').value;
-            console.log(`Sorting by ${sortField} in ${sortDirection} order`);
-            const searchQuery = document.getElementById('searchQuery').value;
-            let filteredCdrs = searchCdrs(cdrs, searchQuery); // Apply search first
-            filteredCdrs = sortCdrs(filteredCdrs, sortField, sortDirection);
-            renderCdrTable(filteredCdrs);
+            const field = document.getElementById('sortField').value;
+            const direction = document.getElementById('sortDirection').value;
+            const query = document.getElementById('searchQuery').value;
+            const filtered = searchCdrs(cdrs, query);
+            const sorted = sortCdrs(filtered, field, direction);
+
+            renderCdrTable(sorted);
         });
-    } else {
-        console.error('sortForm not found');
     }
 
     if (reportForm) {
         reportForm.addEventListener('submit', async (e) => {
             e.preventDefault();
-            console.log('Report form submitted');
             usageReportDiv.innerHTML = 'Loading...';
             try {
                 const validToken = await getValidToken();
                 if (!validToken) return;
-                console.log('Fetching CDRs for report with token:', validToken.substring(0, 20) + '...');
-                const response = await fetch('http://localhost:8080/cdrs', {
+
+                const response = await fetch('http://localhost:8084/cdrs', {
                     method: 'GET',
                     headers: {
                         'Authorization': `Bearer ${validToken}`,
                         'Content-Type': 'application/json'
                     }
                 });
-                console.log('Response status:', response.status);
-                if (!response.ok) {
-                    const errorText = await response.text();
-                    throw new Error(`HTTP error ${response.status}: ${errorText || response.statusText}`);
-                }
+
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
                 const data = await response.json();
-                console.log('CDR Data for Report:', data);
 
                 const reportType = document.getElementById('reportType').value;
                 const fromDate = document.getElementById('fromDate').value;
-                console.log(`Generating ${reportType} report from ${fromDate || 'all dates'}`);
 
-                const filteredData = filterCdrsByDate(data, fromDate);
-                const reportHtml = generateReport(reportType, filteredData);
-                usageReportDiv.innerHTML = reportHtml;
+                const filtered = filterCdrsByDate(data, fromDate);
+                console.log('Fetched CDRs:', data);
+                console.log('Filtered CDRs:', filtered);
+                console.log('Report Type:', reportType);
+
+                const html = generateReport(reportType, filtered);
+                console.log('Generated Report HTML:', html);
+
+                usageReportDiv.innerHTML = html;
             } catch (err) {
-                console.error('Error generating report:', err);
                 usageReportDiv.innerHTML = `Error: ${err.message}`;
             }
         });
-    } else {
-        console.error('reportForm not found');
     }
+
+
 });

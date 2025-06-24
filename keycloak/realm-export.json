@@ -1,6 +1,9 @@
 {
   "realm": "cdr-realm",
   "enabled": true,
+  "attributes": {
+    "frontendUrl": "http://keycloak:8080"
+  },
   "users": [
     {
       "username": "testuser",
@@ -12,16 +15,14 @@
           "value": "testpass",
           "temporary": false
         }
-      ]
+      ],
+      "realmRoles": ["cdr-read", "cdr-write"]
     },
     {
       "username": "service-account-spring-boot-backend",
       "enabled": true,
       "serviceAccountClientId": "spring-boot-backend",
-      "realmRoles": [
-        "cdr-read",
-        "cdr-write"
-      ]
+      "realmRoles": ["cdr-read", "cdr-write"]
     }
   ],
   "roles": {
@@ -61,7 +62,7 @@
       "webOrigins": [
         "http://localhost:8083"
       ],
-      "standardFlowEnabled": true
+      "directAccessGrantsEnabled": true
     }
   ]
 }

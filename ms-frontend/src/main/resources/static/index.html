@@ -5,6 +5,9 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CDR Frontend</title>
+    <script src="https://cdn.jsdelivr.net/npm/dayjs@1/dayjs.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/dayjs@1/plugin/customParseFormat.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/dayjs@1/plugin/isBetween.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/keycloak-js@24.0.4/dist/keycloak.min.js"></script>
     <script src="script.js" defer></script>
     <style>
@@ -17,18 +20,31 @@
     </style>
 </head>
 <body>
-<h1>CDR Frontend Application</h1>
 
+<h1>CDR Frontend Application</h1>
 <button id="loginBtn">Login</button>
 <button id="logoutBtn">Logout</button>
 
 <h2>CDR Records</h2>
 <form id="searchForm">
-    <label for="searchQuery">Search CDRs:</label>
-    <input type="text" id="searchQuery" name="searchQuery" placeholder="Enter ID, source, date, etc.">
+    <label for="searchField">Search By:</label>
+    <select id="searchField" name="searchField">
+        <option value="all">All</option>
+        <option value="id">ID</option>
+        <option value="source">Source</option>
+        <option value="destination">Destination</option>
+        <option value="startTime">Start Time</option>
+        <option value="service">Service</option>
+        <option value="usageAmount">Usage Amount</option>
+    </select>
+
+    <label for="searchQuery">Query:</label>
+    <input type="text" id="searchQuery" name="searchQuery" placeholder="Enter value...">
+
     <button type="submit">Search</button>
     <button type="button" id="clearSearch">Clear</button>
 </form>
+
 <form id="sortForm">
     <label for="sortField">Sort By:</label>
     <select id="sortField" name="sortField">
@@ -55,7 +71,6 @@
     <select id="reportType" name="reportType">
         <option value="dailyCount">Daily Usage Count</option>
         <option value="dailyService">Daily Usage per Service</option>
-        <option value="topSources">Top Sources</option>
     </select>
     <label for="fromDate">Date:</label>
     <input type="date" id="fromDate" name="fromDate">
