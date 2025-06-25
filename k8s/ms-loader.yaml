@@ -18,6 +18,14 @@ spec:
           imagePullPolicy: Never
           ports:
             - containerPort: 8080
+          volumeMounts:
+            - name: input-volume
+              mountPath: /input
+      volumes:
+        - name: input-volume
+          hostPath:
+            path: /run/desktop/mnt/host/c/temp
+            type: Directory
 ---
 apiVersion: v1
 kind: Service
