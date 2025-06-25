@@ -12,7 +12,7 @@
       "credentials": [
         {
           "type": "password",
-          "value": "testpass",
+          "value": "<your-pass>",
           "temporary": false
         }
       ],
@@ -43,7 +43,7 @@
       "enabled": true,
       "protocol": "openid-connect",
       "publicClient": false,
-      "secret": "eDseMeP4WpqHsV2Cc6R8Ak1lVeK28BwP",
+      "secret": "<your-client-secret>",
       "redirectUris": ["*"],
       "webOrigins": ["*"],
       "standardFlowEnabled": false,
