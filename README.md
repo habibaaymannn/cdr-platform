@@ -17,7 +17,7 @@ This project implements a microservices-based Call Detail Records (CDR) platform
   User interface for authentication and managing CDR records.  
   Displays aggregated reports by service and date.
 
-All services are containerized with Docker and can be deployed to a Kubernetes cluster.
+All services are containerized with Docker and deployed to a Kubernetes cluster.
 
 ---
 
