@@ -1,9 +1,6 @@
 {
   "realm": "cdr-realm",
   "enabled": true,
-  "attributes": {
-    "frontendUrl": "http://keycloak:8080"
-  },
   "users": [
     {
       "username": "testuser",
@@ -12,7 +9,7 @@
       "credentials": [
         {
           "type": "password",
-          "value": "<your-pass>",
+          "value": "testpass",
           "temporary": false
         }
       ],
@@ -43,7 +40,7 @@
       "enabled": true,
       "protocol": "openid-connect",
       "publicClient": false,
-      "secret": "<your-client-secret>",
+      "secret": "eDseMeP4WpqHsV2Cc6R8Ak1lVeK28BwP",
       "redirectUris": ["*"],
       "webOrigins": ["*"],
       "standardFlowEnabled": false,

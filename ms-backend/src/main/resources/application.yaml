@@ -1,0 +1,65 @@
+spring:
+  application:
+   name: ms-backend
+
+
+  datasource:
+    url: jdbc:mysql://mysql:3306/cdr_db?useSSL=false&allowPublicKeyRetrieval=true
+    username: root
+    password: <your-pass>
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    hikari:
+      connection-timout: 30000
+      idle-timeout: 600000
+      max-lifetime: 1800000
+      maximum-pool-size: 10
+      connection-test-query: SELECT 1
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQL8Dialect
+
+  kafka:
+    bootstrap-servers: kafka:9092
+    consumer:
+      group-id: cdr-consumer-group
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      properties:
+        json:
+          trusted:
+            packages: com.example.cdr.msbackend.Model
+    topic: cdr-records
+    admin:
+      auto-create: true
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: http://keycloak:8080/realms/cdr-realm
+
+logging:
+  level:
+    root: DEBUG
+    com:
+      example:
+        cdr:
+          msbackend: DEBUG
+      zaxxer:
+        hikari: DEBUG
+    org:
+      hibernate: ERROR
+      springframework:
+        kafka: DEBUG
+        jdbc: DEBUG
+        security:
+          oauth2: DEBUG
+        web: DEBUG
+  error:
+    include-message: always
+    include-binding-errors: always

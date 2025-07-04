@@ -3,23 +3,21 @@ package com.example.cdr.msbackend.Service;
 import com.example.cdr.msbackend.Model.Cdr;
 import com.example.cdr.msbackend.Repository.CdrRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Service;
 
+@RequiredArgsConstructor
 @Service
 public class KafkaConsumer {
     private static final Logger logger = LoggerFactory.getLogger(KafkaConsumer.class);
     private final CdrRepository cdrRepository;
     private final ObjectMapper objectMapper;
 
-    public KafkaConsumer(CdrRepository cdrRepository, ObjectMapper objectMapper) {
-        this.cdrRepository = cdrRepository;
-        this.objectMapper = objectMapper;
-    }
 
-    @KafkaListener(topics = "cdr-records", groupId = "cdr-consumer-group")
+    @KafkaListener(topics ="${spring.kafka.topic}", groupId = "cdr-consumer-group")
     public void consume(String message) {
         logger.info("Received message from cdr-records: {}", message);
         try {
