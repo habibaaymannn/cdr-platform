@@ -20,6 +20,9 @@ target/
 *.ipr
 .env
 
+### Ignore K8s Secrets ###
+k8s/secret.yaml
+
 ### NetBeans ###
 /nbproject/private/
 /nbbuild/

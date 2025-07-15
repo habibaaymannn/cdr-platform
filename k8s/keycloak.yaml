@@ -3,7 +3,7 @@ kind: Deployment
 metadata:
   name: keycloak
 spec:
-  replicas: 1
+  replicas: 3
   selector:
     matchLabels:
       app: keycloak
@@ -22,7 +22,7 @@ spec:
             - name: KEYCLOAK_ADMIN
               value: admin
             - name: KEYCLOAK_ADMIN_PASSWORD
-              value: "${KEYCLOAK_ADMIN_PASSWORD}"
+              value: "admin"
           volumeMounts:
             - name: realm-import
               mountPath: /opt/keycloak/data/import

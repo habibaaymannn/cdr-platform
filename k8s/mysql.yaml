@@ -1,4 +1,22 @@
 apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mysql-config
+data:
+  my.cnf: |
+    [mysqld]
+    server-id=1
+    log-bin=mysql-bin
+    binlog-format=ROW
+    gtid_mode=ON
+    enforce-gtid-consistency=ON
+    log_slave_updates=ON
+    relay_log=relay-log
+    read_only=OFF
+    skip-host-cache
+    skip-name-resolve
+---
+apiVersion: v1
 kind: Service
 metadata:
   name: mysql
@@ -8,18 +26,19 @@ spec:
   ports:
     - port: 3306
       targetPort: 3306
-  type: ClusterIP
+  clusterIP: None
 
 ---
 apiVersion: apps/v1
-kind: Deployment
+kind: StatefulSet
 metadata:
   name: mysql
 spec:
   selector:
     matchLabels:
       app: mysql
-  replicas: 1
+  serviceName: mysql
+  replicas: 3
   template:
     metadata:
       labels:
@@ -30,8 +49,33 @@ spec:
           image: mysql:8
           env:
             - name: MYSQL_ROOT_PASSWORD
-              value: <your-pass>
+              valueFrom:
+                secretKeyRef:
+                  key: mysql-root-password
+                  name: db-secret
             - name: MYSQL_DATABASE
               value: cdr_db
+            - name: MYSQL_USER
+              value: cdr_user
+            - name: MYSQL_PASSWORD
+              value: cdr_pass
           ports:
             - containerPort: 3306
+              name: mysql
+          volumeMounts:
+            - mountPath: /etc/mysql/config.d
+              name: config
+            - mountPath: /var/lib/mysql
+              name: data
+      volumes:
+        - name: config
+          configMap:
+            name: mysql-config
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests:
+            storage: 10Gi

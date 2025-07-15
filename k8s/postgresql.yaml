@@ -1,24 +1,34 @@
 apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: postgres-config
+data:
+  postgresql.conf: |
+    max_connections = 100
+    shared_buffers = 256MB
+---
+apiVersion: v1
 kind: Service
 metadata:
   name: postgres
 spec:
-  type: ClusterIP
   selector:
     app: postgres
   ports:
     - port: 5432
       targetPort: 5432
+  clusterIP: None
 ---
 apiVersion: apps/v1
-kind: Deployment
+kind: StatefulSet
 metadata:
   name: postgres
 spec:
-  replicas: 1
+  replicas: 3
   selector:
     matchLabels:
       app: postgres
+  serviceName: postgres
   template:
     metadata:
       labels:
@@ -29,16 +39,31 @@ spec:
           image: postgres:15
           ports:
             - containerPort: 5432
+              name: postgres
           env:
             - name: POSTGRES_DB
               value: cdr2_db
             - name: POSTGRES_USER
               value: postgres
             - name: POSTGRES_PASSWORD
-              value: <your-pass>
+              valueFrom:
+                secretKeyRef:
+                  key: postgres-root-password
+                  name: db-secret
           volumeMounts:
+            - mountPath: /etc/postgresql
+              name: config-volume
             - mountPath: /var/lib/postgresql/data
-              name: postgres-storage
+              name: data
       volumes:
-        - name: postgres-storage
-          emptyDir: {}
+        - name: config-volume
+          configMap:
+            name: postgres-config
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests:
+            storage: 10Gi

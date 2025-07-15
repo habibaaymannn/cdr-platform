@@ -1,9 +1,0 @@
-<cdrWrapper>
-  <Cdr>
-    <source>1234567890</source>
-    <destination>1159255595</destination>
-    <startTime>20-06-2025 15:30:00</startTime>
-    <service>SMS</service>
-    <usageAmount>5</usageAmount>
-  </Cdr>
-</cdrWrapper>
