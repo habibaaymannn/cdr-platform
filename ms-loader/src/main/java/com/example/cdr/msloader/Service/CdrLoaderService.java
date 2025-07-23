@@ -33,7 +33,6 @@ public class CdrLoaderService {
 
     @Value("${kafka.topic}")
     private String kafkaTopic;
-    private static final Pattern URL_PATTERN = Pattern.compile("^(https?://).+");
 
     @Transactional
     public void saveCdr(CdrLoader cdr) {
@@ -54,34 +53,34 @@ public class CdrLoaderService {
         }
     }
 
-    public boolean isValidCdr(CdrLoader cdr) {
-        if (cdr.getSource() == null ) {
-            throw new IllegalArgumentException("Source is required");
-        }
-        if (cdr.getDestination() == null) {
-            throw new IllegalArgumentException("Destination is required");
-        }
-        if (cdr.getService() == DATA) {
-            if (!URL_PATTERN.matcher(cdr.getDestination()).matches()) {
-                throw new IllegalArgumentException("Destination must be a valid URL for DATA");
-            }
-        }
-        // Validate startTime
-        if (cdr.getStartTime() == null) {
-            throw new IllegalArgumentException("StartTime is required");
-        }
-        // Validate service
-        if (cdr.getService() == null) {
-            throw new IllegalArgumentException("Service is required");
-        }
-        // Validate usageAmount
-        if (cdr.getService() == SMS) {
-            cdr.setUsageAmount(1.0);
-        } else if (cdr.getUsageAmount() == null || cdr.getUsageAmount() <= 0) {
-            throw new IllegalArgumentException("UsageAmount must be positive for VOICE/DATA");
-        }
-        return true;
-    }
+//    public boolean isValidCdr(CdrLoader cdr) {
+//        if (cdr.getSource() == null ) {
+//            throw new IllegalArgumentException("Source is required");
+//        }
+//        if (cdr.getDestination() == null) {
+//            throw new IllegalArgumentException("Destination is required");
+//        }
+//        if (cdr.getService() == DATA) {
+//            if (!URL_PATTERN.matcher(cdr.getDestination()).matches()) {
+//                throw new IllegalArgumentException("Destination must be a valid URL for DATA");
+//            }
+//        }
+//        // Validate startTime
+//        if (cdr.getStartTime() == null) {
+//            throw new IllegalArgumentException("StartTime is required");
+//        }
+//        // Validate service
+//        if (cdr.getService() == null) {
+//            throw new IllegalArgumentException("Service is required");
+//        }
+//        // Validate usageAmount
+//        if (cdr.getService() == SMS) {
+//            cdr.setUsageAmount(1.0);
+//        } else if (cdr.getUsageAmount() == null || cdr.getUsageAmount() <= 0) {
+//            throw new IllegalArgumentException("UsageAmount must be positive for VOICE/DATA");
+//        }
+//        return true;
+//    }
 
     public void moveToErrorDirectory(Path filePath) {
         try {

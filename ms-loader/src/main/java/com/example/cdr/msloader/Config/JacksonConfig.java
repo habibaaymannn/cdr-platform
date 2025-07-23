@@ -18,40 +18,35 @@ import java.time.format.DateTimeFormatter;
 
 @Configuration
 public class JacksonConfig {
+    private JavaTimeModule customJavaTimeModule(){
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm:ss");
+        JavaTimeModule module = new JavaTimeModule();
+        module.addDeserializer(LocalDateTime.class, new LocalDateTimeDeserializer(formatter));
+        return module;
+    }
+    private void configureObjectMapper(ObjectMapper mapper){
+        mapper.registerModule(customJavaTimeModule());
+        mapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
+        mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false); // optional
+
+    }
     @Bean
     @Primary
     public ObjectMapper objectMapper() {
         ObjectMapper mapper = new ObjectMapper();
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm:ss");
-        JavaTimeModule module = new JavaTimeModule();
-        mapper.registerModule(module);
-        module.addDeserializer(LocalDateTime.class, new LocalDateTimeDeserializer(formatter));
-
-        mapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
-        mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false); // optional
-
+        configureObjectMapper(mapper);
         return mapper;
     }
     @Bean
     public YAMLMapper yamlMapper() {
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm:ss");
-        JavaTimeModule module = new JavaTimeModule();
-        module.addDeserializer(LocalDateTime.class, new LocalDateTimeDeserializer(formatter));
         YAMLMapper mapper = new YAMLMapper();
-        mapper.registerModule(module);
-        mapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
-        mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+        configureObjectMapper(mapper);
         return mapper;
     }
     @Bean
     public XmlMapper xmlMapper() {
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm:ss");
-        JavaTimeModule module = new JavaTimeModule();
-        module.addDeserializer(LocalDateTime.class, new LocalDateTimeDeserializer(formatter));
         XmlMapper mapper = new XmlMapper();
-        mapper.registerModule(module);
-        mapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
-        mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+        configureObjectMapper(mapper);
         return mapper;
     }
 }

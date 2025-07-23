@@ -20,8 +20,10 @@ public interface CdrMapper {
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm:ss");
         return LocalDateTime.parse(dateString, formatter);
     }
+    //Strategy design pattern
     @Named("toServiceType")
     default ServiceType toServiceType(String service) {
+        //factory design pattern
         return ServiceType.valueOf(service);
     }
 

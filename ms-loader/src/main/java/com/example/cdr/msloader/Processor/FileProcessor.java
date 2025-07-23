@@ -2,6 +2,7 @@ package com.example.cdr.msloader.Processor;
 
 import com.example.cdr.msloader.Model.CdrLoader;
 import com.example.cdr.msloader.Service.CdrLoaderService;
+import com.example.cdr.msloader.Service.Validation.CdrValidationStrategy;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import org.slf4j.Logger;
@@ -14,6 +15,7 @@ import java.util.List;
 @RequiredArgsConstructor(onConstructor = @__(@Lazy))
 public abstract class FileProcessor {
     protected final CdrLoaderService service;
+    private final CdrValidationStrategy cdrValidationStrategy;
     private static final Logger logger = LoggerFactory.getLogger(FileProcessor.class);
     @Setter
     private FileProcessor next;
@@ -38,7 +40,7 @@ public abstract class FileProcessor {
             }
 
             for (CdrLoader cdr : cdrs) {
-                if (service.isValidCdr(cdr)) {
+                if (cdrValidationStrategy.validateCdr(cdr)) {
                     try {
                         service.saveCdr(cdr);
                     } catch (DataIntegrityViolationException e) {
